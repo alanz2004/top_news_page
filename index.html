@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Market News Reader</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+:root {
+  --bg: #0e1117;
+  --card: #161b22;
+  --text: #e6edf3;
+  --muted: #9da7b3;
+  --accent: #4cc9f0;
+  --border: #222833;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+header p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 900px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.content {
+  font-size: 17px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.tickers {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ticker {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  background: #1f2937;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+button {
+  background: #1f2937;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding-bottom: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Market News Reader</h1>
+  <p>One signal at a time. No noise.</p>
+</header>
+
+<main>
+  <div class="card" id="card">
+    Loading...
+  </div>
+</main>
+
+<div class="footer">
+  ← → arrow keys • Space = next
+</div>
+
+<script>
+let articles = [];
+let index = 0;
+
+fetch("combined_all_news.json")
+  .then(r => r.json())
+  .then(data => {
+    articles = data
+      .filter(a => a.published_at)
+      .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+    render();
+  });
+
+function render() {
+  const a = articles[index];
+  if (!a) return;
+
+  document.getElementById("card").innerHTML = `
+    <div class="meta">
+      <div>${a.source || "Unknown"}</div>
+      <div>${a.published_at}</div>
+    </div>
+
+    <div class="content">
+      ${escapeHtml(a.content || "No content")}
+    </div>
+
+    <div class="tickers">
+      ${(a.tickers || []).map(t => `<span class="ticker">${t}</span>`).join("")}
+    </div>
+
+    <div class="actions">
+      <button onclick="prev()" ${index === 0 ? "disabled" : ""}>← Previous</button>
+      <a href="${a.url}" target="_blank">Open source ↗</a>
+      <button onclick="next()" ${index === articles.length - 1 ? "disabled" : ""}>Next →</button>
+    </div>
+  `;
+}
+
+function next() {
+  if (index < articles.length - 1) {
+    index++;
+    render();
+  }
+}
+
+function prev() {
+  if (index > 0) {
+    index--;
+    render();
+  }
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === " ") next();
+  if (e.key === "ArrowLeft") prev();
+});
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>
